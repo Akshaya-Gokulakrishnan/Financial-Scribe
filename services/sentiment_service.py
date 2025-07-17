@@ -114,18 +114,18 @@ class SentimentService:
     
     def get_sentiment_label(self, sentiment_score):
         """Get human-readable sentiment label"""
-        if sentiment_score > 0.05:
+        if sentiment_score > 0.1:
             return "Positive"
-        elif sentiment_score < -0.05:
+        elif sentiment_score < -0.1:
             return "Negative"
         else:
             return "Neutral"
     
     def get_sentiment_color(self, sentiment_score):
         """Get color code for sentiment visualization"""
-        if sentiment_score > 0.05:
+        if sentiment_score > 0.1:
             return "success"  # Green
-        elif sentiment_score < -0.05:
+        elif sentiment_score < -0.1:
             return "danger"   # Red
         else:
             return "secondary"  # Gray

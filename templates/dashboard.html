@@ -5,7 +5,62 @@
 {% block content %}
 <div class="container mt-4">
     {% if portfolio %}
-
+        <!-- Portfolio Overview -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <h2>Portfolio Overview</h2>
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <div class="card bg-primary">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <i class="fas fa-dollar-sign me-2"></i>
+                                    Total Value
+                                </h5>
+                                <h3 class="mb-0">${{ "%.2f"|format(portfolio.get_total_value()) }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card bg-{{ 'success' if portfolio.get_total_gain_loss() >= 0 else 'danger' }}">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <i class="fas fa-chart-line me-2"></i>
+                                    Total Gain/Loss
+                                </h5>
+                                <h3 class="mb-0">
+                                    {{ '+' if portfolio.get_total_gain_loss() >= 0 else '' }}${{ "%.2f"|format(portfolio.get_total_gain_loss()) }}
+                                </h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card bg-{{ 'success' if portfolio.get_daily_gain_loss() >= 0 else 'danger' }}">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <i class="fas fa-calendar-day me-2"></i>
+                                    Daily Gain/Loss
+                                </h5>
+                                <h3 class="mb-0">
+                                    {{ '+' if portfolio.get_daily_gain_loss() >= 0 else '' }}${{ "%.2f"|format(portfolio.get_daily_gain_loss()) }}
+                                </h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card bg-info">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <i class="fas fa-layer-group me-2"></i>
+                                    Total Stocks
+                                </h5>
+                                <h3 class="mb-0">{{ portfolio.stocks|length }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- Stock Holdings -->
         <div class="row mb-4">
@@ -36,7 +91,6 @@
                                             <th>Gain/Loss</th>
                                             <th>Daily Change</th>
                                             <th>Portfolio Impact</th>
-                                            <th>Overall Impact</th>
                                             <th>Sentiment</th>
                                             <th>Actions</th>
                                         </tr>
@@ -63,16 +117,13 @@
                                                 <small>({{ "%.1f"|format(stock.get_daily_gain_loss_percentage()) }}%)</small>
                                             </td>
                                             <td>{{ "%.1f"|format(stock.get_portfolio_impact()) }}%</td>
-                                            <td class="text-{{ 'success' if stock.get_overall_impact() > 0 else 'danger' if stock.get_overall_impact() < 0 else 'secondary' }}">
-                                                {{ "%.1f"|format(stock.get_overall_impact()) }}%
-                                            </td>
                                             <td>
                                                 {% if stock.news_sentiment %}
-                                                    <span class="badge bg-{{ 'success' if stock.news_sentiment > 0.05 else 'danger' if stock.news_sentiment < -0.05 else 'secondary' }}">
-                                                        {{ 'Positive' if stock.news_sentiment > 0.05 else 'Negative' if stock.news_sentiment < -0.05 else 'Neutral' }}
+                                                    <span class="badge bg-{{ 'success' if stock.news_sentiment > 0.1 else 'danger' if stock.news_sentiment < -0.1 else 'secondary' }}">
+                                                        {{ "%.2f"|format(stock.news_sentiment) }}
                                                     </span>
                                                 {% else %}
-                                                    <span class="badge bg-secondary">Neutral</span>
+                                                    <span class="badge bg-secondary">N/A</span>
                                                 {% endif %}
                                             </td>
                                             <td>
@@ -103,7 +154,37 @@
             </div>
         </div>
 
-
+        <!-- Portfolio Composition Chart -->
+        {% if portfolio.stocks %}
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-pie me-2"></i>
+                            Portfolio Composition
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="portfolioChart" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-bar me-2"></i>
+                            Performance Overview
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="performanceChart" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
 
         <!-- Recent News -->
         <div class="row">
@@ -179,5 +260,81 @@
     {% endif %}
 </div>
 
+<!-- Chart.js Scripts -->
+{% if portfolio and portfolio.stocks %}
+<script>
+    // Portfolio Composition Chart
+    const portfolioCtx = document.getElementById('portfolioChart').getContext('2d');
+    const portfolioChart = new Chart(portfolioCtx, {
+        type: 'doughnut',
+        data: {
+            labels: [
+                {% for stock in portfolio.stocks %}
+                '{{ stock.symbol }}',
+                {% endfor %}
+            ],
+            datasets: [{
+                data: [
+                    {% for stock in portfolio.stocks %}
+                    {{ stock.get_current_value() }},
+                    {% endfor %}
+                ],
+                backgroundColor: [
+                    '#007bff', '#28a745', '#ffc107', '#dc3545', '#6f42c1',
+                    '#fd7e14', '#20c997', '#6c757d', '#f8f9fa', '#343a40'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
 
+    // Performance Chart
+    const performanceCtx = document.getElementById('performanceChart').getContext('2d');
+    const performanceChart = new Chart(performanceCtx, {
+        type: 'bar',
+        data: {
+            labels: [
+                {% for stock in portfolio.stocks %}
+                '{{ stock.symbol }}',
+                {% endfor %}
+            ],
+            datasets: [{
+                label: 'Gain/Loss ($)',
+                data: [
+                    {% for stock in portfolio.stocks %}
+                    {{ stock.get_gain_loss() }},
+                    {% endfor %}
+                ],
+                backgroundColor: [
+                    {% for stock in portfolio.stocks %}
+                    '{{ "#28a745" if stock.get_gain_loss() >= 0 else "#dc3545" }}',
+                    {% endfor %}
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+</script>
+{% endif %}
 {% endblock %}
