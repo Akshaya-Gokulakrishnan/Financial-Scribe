@@ -190,6 +190,54 @@ def add_stock():
     
     return render_template('add_stock.html')
 
+@app.route('/stock/<symbol>')
+def stock_detail(symbol):
+    """Show detailed information for a specific stock"""
+    try:
+        # Get the stock from the portfolio
+        stock = Stock.query.filter_by(symbol=symbol.upper()).first()
+        if not stock:
+            flash('Stock not found in portfolio', 'error')
+            return redirect(url_for('dashboard'))
+        
+        # Get recent news for this specific stock
+        news_service = NewsService()
+        sentiment_service = SentimentService()
+        
+        stock_news = news_service.get_stock_news(stock.symbol, limit=20)
+        
+        # Calculate sentiment for each news article
+        for article in stock_news:
+            sentiment = sentiment_service.analyze_sentiment(article.get('title', ''))
+            article['sentiment'] = sentiment
+            article['sentiment_label'] = sentiment_service.get_sentiment_label(sentiment)
+            article['sentiment_color'] = sentiment_service.get_sentiment_color(sentiment)
+        
+        # Update stock with fresh market data
+        stock_service = StockService()
+        stock_data = stock_service.get_stock_data(stock.symbol)
+        
+        if stock_data:
+            stock.current_price = stock_data.get('current_price', stock.current_price)
+            stock.previous_close = stock_data.get('previous_close', stock.previous_close)
+            stock.change_percent = stock_data.get('change_percent', stock.change_percent)
+            stock.volume = stock_data.get('volume', stock.volume)
+            stock.market_cap = stock_data.get('market_cap', stock.market_cap)
+            stock.pe_ratio = stock_data.get('pe_ratio', stock.pe_ratio)
+            stock.dividend_yield = stock_data.get('dividend_yield', stock.dividend_yield)
+            stock.week_52_high = stock_data.get('week_52_high', stock.week_52_high)
+            stock.week_52_low = stock_data.get('week_52_low', stock.week_52_low)
+            stock.last_updated = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return render_template('stock_detail.html', stock=stock, news=stock_news)
+        
+    except Exception as e:
+        logger.error(f"Error loading stock detail for {symbol}: {e}")
+        flash('Error loading stock details. Please try again.', 'error')
+        return redirect(url_for('dashboard'))
+
 @app.route('/remove_stock/<int:stock_id>')
 def remove_stock(stock_id):
     """Remove a stock from the portfolio"""

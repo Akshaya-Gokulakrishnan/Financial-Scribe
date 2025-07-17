@@ -99,7 +99,9 @@
                                         {% for stock in portfolio.stocks %}
                                         <tr>
                                             <td>
-                                                <strong>{{ stock.symbol }}</strong>
+                                                <a href="{{ url_for('stock_detail', symbol=stock.symbol) }}" class="text-decoration-none">
+                                                    <strong>{{ stock.symbol }}</strong>
+                                                </a>
                                             </td>
                                             <td>{{ stock.company_name or stock.symbol }}</td>
                                             <td>{{ stock.quantity }}</td>
@@ -218,7 +220,11 @@
                                 <tbody>
                                     {% for stock in top_impact_stocks %}
                                     <tr>
-                                        <td><strong>{{ stock.stock_symbol }}</strong></td>
+                                        <td>
+                                            <a href="{{ url_for('stock_detail', symbol=stock.stock_symbol) }}" class="text-decoration-none">
+                                                <strong>{{ stock.stock_symbol }}</strong>
+                                            </a>
+                                        </td>
                                         <td>{{ "%.1f"|format(stock.portfolio_weight) }}%</td>
                                         <td>
                                             <span class="badge bg-{{ 'success' if stock.sentiment_score > 1 else 'danger' if stock.sentiment_score < -1 else 'secondary' }}">
@@ -253,8 +259,11 @@
                     <div class="card-header">
                         <h5 class="mb-0">
                             <i class="fas fa-newspaper me-2"></i>
-                            Recent News
+                            Recent News Overview
                         </h5>
+                        <small class="text-muted">
+                            Click on any stock symbol above to view detailed news for that specific stock
+                        </small>
                     </div>
                     <div class="card-body">
                         {% if recent_news %}

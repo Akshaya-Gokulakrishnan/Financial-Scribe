@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block title %}{{ stock.symbol }} - Stock Detail{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3">
+                    <i class="fas fa-chart-line me-2"></i>
+                    {{ stock.symbol }}
+                    {% if stock.company_name %}
+                        <small class="text-muted">- {{ stock.company_name }}</small>
+                    {% endif %}
+                </h1>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stock Information Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h6 class="card-title">Current Price</h6>
+                    <h4 class="text-{{ 'success' if stock.change_percent and stock.change_percent > 0 else 'danger' if stock.change_percent and stock.change_percent < 0 else 'secondary' }}">
+                        ${{ "%.2f"|format(stock.current_price) }}
+                    </h4>
+                    {% if stock.change_percent %}
+                        <small class="text-{{ 'success' if stock.change_percent > 0 else 'danger' if stock.change_percent < 0 else 'secondary' }}">
+                            {{ "%.2f"|format(stock.change_percent) }}%
+                        </small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h6 class="card-title">Your Holdings</h6>
+                    <h4>{{ stock.quantity }} shares</h4>
+                    <small class="text-muted">Avg. Cost: ${{ "%.2f"|format(stock.purchase_price) }}</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h6 class="card-title">Current Value</h6>
+                    <h4>${{ "%.2f"|format(stock.get_current_value()) }}</h4>
+                    <small class="text-muted">Total Investment: ${{ "%.2f"|format(stock.get_total_investment()) }}</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h6 class="card-title">Gain/Loss</h6>
+                    <h4 class="text-{{ 'success' if stock.get_gain_loss() > 0 else 'danger' if stock.get_gain_loss() < 0 else 'secondary' }}">
+                        {{ "+" if stock.get_gain_loss() > 0 else "" }}${{ "%.2f"|format(stock.get_gain_loss()) }}
+                    </h4>
+                    <small class="text-{{ 'success' if stock.get_gain_loss_percent() > 0 else 'danger' if stock.get_gain_loss_percent() < 0 else 'secondary' }}">
+                        {{ "+" if stock.get_gain_loss_percent() > 0 else "" }}{{ "%.2f"|format(stock.get_gain_loss_percent()) }}%
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Market Data -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>
+                        Market Data
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <strong>Previous Close:</strong> ${{ "%.2f"|format(stock.previous_close) if stock.previous_close else 'N/A' }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Volume:</strong> {{ "{:,}".format(stock.volume) if stock.volume else 'N/A' }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Market Cap:</strong> {{ stock.market_cap if stock.market_cap else 'N/A' }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>P/E Ratio:</strong> {{ "%.2f"|format(stock.pe_ratio) if stock.pe_ratio else 'N/A' }}
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-3">
+                            <strong>52-Week High:</strong> ${{ "%.2f"|format(stock.week_52_high) if stock.week_52_high else 'N/A' }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>52-Week Low:</strong> ${{ "%.2f"|format(stock.week_52_low) if stock.week_52_low else 'N/A' }}
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Dividend Yield:</strong> {{ "%.2f"|format(stock.dividend_yield) if stock.dividend_yield else 'N/A' }}%
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Last Updated:</strong> {{ stock.last_updated.strftime('%Y-%m-%d %H:%M') if stock.last_updated else 'N/A' }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent News -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-newspaper me-2"></i>
+                        Recent News for {{ stock.symbol }}
+                        <span class="badge bg-primary ms-2">{{ news|length }} articles</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if news %}
+                        <div class="row">
+                            {% for article in news %}
+                            <div class="col-md-6 mb-3">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <h6 class="card-title">
+                                            <a href="{{ article.url }}" target="_blank" class="text-decoration-none">
+                                                {{ article.title }}
+                                            </a>
+                                        </h6>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <small class="text-muted">
+                                                {{ article.source }}
+                                                {% if article.published_date %}
+                                                    - {{ article.published_date.strftime('%m/%d %H:%M') }}
+                                                {% endif %}
+                                            </small>
+                                            <span class="badge bg-{{ article.sentiment_color }}">
+                                                {{ article.sentiment_label }}
+                                                ({{ "%.2f"|format(article.sentiment) }})
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-newspaper fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No recent news found</h5>
+                            <p class="text-muted">We couldn't find any recent news articles for {{ stock.symbol }}</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-cog me-2"></i>
+                        Actions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <a href="{{ url_for('remove_stock', stock_id=stock.id) }}" 
+                       class="btn btn-danger"
+                       onclick="return confirm('Are you sure you want to remove {{ stock.symbol }} from your portfolio?')">
+                        <i class="fas fa-trash me-2"></i>
+                        Remove from Portfolio
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
