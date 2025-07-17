@@ -85,6 +85,14 @@ class Stock(db.Model):
         if total_portfolio_value == 0:
             return 0
         return (self.get_current_value() / total_portfolio_value) * 100
+    
+    def get_overall_impact(self):
+        """Calculate overall impact of this stock on portfolio performance"""
+        total_portfolio_gain_loss = self.portfolio.get_total_gain_loss()
+        if total_portfolio_gain_loss == 0:
+            return 0
+        stock_contribution = (self.get_gain_loss() / total_portfolio_gain_loss) * 100
+        return stock_contribution
 
 class NewsArticle(db.Model):
     id = db.Column(db.Integer, primary_key=True)
