@@ -1,0 +1,339 @@
+/* Custom styles for Portfolio Manager */
+
+/* Global styles */
+:root {
+    --primary-color: #007bff;
+    --success-color: #28a745;
+    --danger-color: #dc3545;
+    --warning-color: #ffc107;
+    --info-color: #17a2b8;
+    --dark-color: #343a40;
+    --light-color: #f8f9fa;
+}
+
+/* Body and layout */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bs-body-bg);
+    line-height: 1.6;
+}
+
+/* Cards */
+.card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.card-header {
+    background-color: var(--bs-gray-800);
+    border-bottom: 1px solid var(--bs-gray-700);
+    border-radius: 12px 12px 0 0;
+    padding: 1rem 1.5rem;
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+/* Portfolio overview cards */
+.card.bg-primary,
+.card.bg-success,
+.card.bg-danger,
+.card.bg-info {
+    color: white;
+}
+
+.card.bg-primary .card-title,
+.card.bg-success .card-title,
+.card.bg-danger .card-title,
+.card.bg-info .card-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.card.bg-primary h3,
+.card.bg-success h3,
+.card.bg-danger h3,
+.card.bg-info h3 {
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+
+/* Table styling */
+.table-responsive {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.table {
+    margin-bottom: 0;
+}
+
+.table th {
+    background-color: var(--bs-gray-800);
+    border-bottom: 2px solid var(--bs-gray-700);
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 1rem 0.75rem;
+}
+
+.table td {
+    padding: 1rem 0.75rem;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--bs-gray-700);
+}
+
+.table tbody tr:hover {
+    background-color: var(--bs-gray-800);
+}
+
+/* Buttons */
+.btn {
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.2s ease-in-out;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-success {
+    background-color: var(--success-color);
+    border-color: var(--success-color);
+}
+
+.btn-danger {
+    background-color: var(--danger-color);
+    border-color: var(--danger-color);
+}
+
+/* Form styling */
+.form-control {
+    border-radius: 8px;
+    border: 1px solid var(--bs-gray-600);
+    background-color: var(--bs-gray-800);
+    color: var(--bs-body-color);
+    transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.form-label {
+    font-weight: 600;
+    color: var(--bs-body-color);
+    margin-bottom: 0.5rem;
+}
+
+/* Badge styling */
+.badge {
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 0.375rem 0.75rem;
+    border-radius: 6px;
+}
+
+/* Alert styling */
+.alert {
+    border-radius: 8px;
+    border: none;
+    font-weight: 500;
+}
+
+/* Navigation */
+.navbar-brand {
+    font-weight: 700;
+    font-size: 1.25rem;
+}
+
+.navbar-nav .nav-link {
+    font-weight: 500;
+    transition: color 0.2s ease-in-out;
+}
+
+.navbar-nav .nav-link:hover {
+    color: var(--primary-color);
+}
+
+/* Footer */
+footer {
+    margin-top: auto;
+    border-top: 1px solid var(--bs-gray-700);
+}
+
+/* Chart containers */
+.chart-container {
+    position: relative;
+    height: 300px;
+    margin-bottom: 1rem;
+}
+
+/* Loading states */
+.loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--bs-gray-600);
+    border-radius: 50%;
+    border-top-color: var(--primary-color);
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Sentiment indicators */
+.sentiment-positive {
+    color: var(--success-color);
+}
+
+.sentiment-negative {
+    color: var(--danger-color);
+}
+
+.sentiment-neutral {
+    color: var(--bs-gray-500);
+}
+
+/* Stock symbol styling */
+.stock-symbol {
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+/* Value styling */
+.value-positive {
+    color: var(--success-color);
+}
+
+.value-negative {
+    color: var(--danger-color);
+}
+
+.value-neutral {
+    color: var(--bs-gray-500);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .table th,
+    .table td {
+        padding: 0.75rem 0.5rem;
+        font-size: 0.85rem;
+    }
+    
+    .btn {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.85rem;
+    }
+}
+
+/* Animation for value updates */
+@keyframes valueUpdate {
+    0% { background-color: var(--warning-color); }
+    100% { background-color: transparent; }
+}
+
+.value-updated {
+    animation: valueUpdate 0.5s ease-in-out;
+}
+
+/* Toast container */
+.toast-container {
+    z-index: 1050;
+}
+
+/* Empty state styling */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--bs-gray-500);
+}
+
+.empty-state i {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+/* News article styling */
+.news-article {
+    transition: transform 0.2s ease-in-out;
+}
+
+.news-article:hover {
+    transform: translateY(-2px);
+}
+
+.news-article .card-title a {
+    color: var(--bs-body-color);
+    text-decoration: none;
+}
+
+.news-article .card-title a:hover {
+    color: var(--primary-color);
+}
+
+/* Performance indicators */
+.performance-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-weight: 500;
+}
+
+.performance-indicator.positive {
+    color: var(--success-color);
+}
+
+.performance-indicator.negative {
+    color: var(--danger-color);
+}
+
+.performance-indicator.neutral {
+    color: var(--bs-gray-500);
+}
+
+/* Utility classes */
+.text-truncate-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.shadow-sm {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.shadow {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.shadow-lg {
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.175);
+}

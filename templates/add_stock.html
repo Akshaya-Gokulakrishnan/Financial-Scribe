@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}Add Stock - Stock Portfolio Manager{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-plus me-2"></i>
+                        Add Stock to Portfolio
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="symbol" class="form-label">Stock Symbol</label>
+                            <input type="text" class="form-control" id="symbol" name="symbol" 
+                                   placeholder="e.g., AAPL, MSFT, GOOGL" required>
+                            <div class="form-text">Enter the stock ticker symbol (e.g., AAPL for Apple Inc.)</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="quantity" class="form-label">Quantity</label>
+                            <input type="number" class="form-control" id="quantity" name="quantity" 
+                                   step="0.01" min="0.01" placeholder="Number of shares" required>
+                            <div class="form-text">Number of shares you own</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="purchase_price" class="form-label">Purchase Price</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="purchase_price" name="purchase_price" 
+                                       step="0.01" min="0.01" placeholder="0.00" required>
+                            </div>
+                            <div class="form-text">Price per share when you purchased</div>
+                        </div>
+                        
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-plus me-1"></i>
+                                Add to Portfolio
+                            </button>
+                            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>
+                                Back to Dashboard
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Stock Information Card -->
+            <div class="card mt-4" id="stockInfo" style="display: none;">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Stock Information
+                    </h6>
+                </div>
+                <div class="card-body" id="stockInfoBody">
+                    <!-- Stock info will be loaded here -->
+                </div>
+            </div>
+            
+            <!-- Tips Card -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-lightbulb me-2"></i>
+                        Tips
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li>Use official ticker symbols (e.g., AAPL for Apple, MSFT for Microsoft)</li>
+                        <li>Enter the exact quantity of shares you own</li>
+                        <li>Purchase price should be the average price if you bought at different times</li>
+                        <li>The system will automatically fetch current market data</li>
+                        <li>News sentiment analysis will be performed after adding the stock</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Stock symbol validation and info fetching
+    document.getElementById('symbol').addEventListener('blur', function() {
+        const symbol = this.value.toUpperCase().trim();
+        if (symbol.length > 0) {
+            fetchStockInfo(symbol);
+        }
+    });
+    
+    function fetchStockInfo(symbol) {
+        const stockInfo = document.getElementById('stockInfo');
+        const stockInfoBody = document.getElementById('stockInfoBody');
+        
+        // Show loading state
+        stockInfo.style.display = 'block';
+        stockInfoBody.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin me-2"></i>Loading stock information...</div>';
+        
+        fetch(`/api/stock_data/${symbol}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    stockInfoBody.innerHTML = `<div class="alert alert-danger mb-0">Error: ${data.error}</div>`;
+                } else {
+                    stockInfoBody.innerHTML = `
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6><strong>${data.symbol}</strong> - ${data.company_name}</h6>
+                                <p class="mb-1"><strong>Current Price:</strong> $${data.current_price.toFixed(2)}</p>
+                                <p class="mb-1"><strong>Previous Close:</strong> $${data.previous_close.toFixed(2)}</p>
+                                <p class="mb-1"><strong>Day Change:</strong> 
+                                    <span class="text-${data.current_price >= data.previous_close ? 'success' : 'danger'}">
+                                        ${data.current_price >= data.previous_close ? '+' : ''}${(data.current_price - data.previous_close).toFixed(2)}
+                                        (${(((data.current_price - data.previous_close) / data.previous_close) * 100).toFixed(2)}%)
+                                    </span>
+                                </p>
+                            </div>
+                            <div class="col-md-6">
+                                ${data.market_cap ? `<p class="mb-1"><strong>Market Cap:</strong> $${(data.market_cap / 1e9).toFixed(2)}B</p>` : ''}
+                                ${data.pe_ratio ? `<p class="mb-1"><strong>P/E Ratio:</strong> ${data.pe_ratio.toFixed(2)}</p>` : ''}
+                                ${data.dividend_yield ? `<p class="mb-1"><strong>Dividend Yield:</strong> ${(data.dividend_yield * 100).toFixed(2)}%</p>` : ''}
+                                ${data.sector ? `<p class="mb-1"><strong>Sector:</strong> ${data.sector}</p>` : ''}
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Auto-fill current price as purchase price if empty
+                    const purchasePriceInput = document.getElementById('purchase_price');
+                    if (!purchasePriceInput.value) {
+                        purchasePriceInput.value = data.current_price.toFixed(2);
+                    }
+                }
+            })
+            .catch(error => {
+                stockInfoBody.innerHTML = `<div class="alert alert-danger mb-0">Error fetching stock information: ${error.message}</div>`;
+            });
+    }
+</script>
+{% endblock %}
