@@ -4,6 +4,7 @@ from models import Portfolio, Stock, NewsArticle
 from services.stock_service import StockService
 from services.news_service import NewsService
 from services.sentiment_service import SentimentService
+from services.portfolio_impact_service import PortfolioImpactService
 from datetime import datetime
 import logging
 
@@ -40,11 +41,12 @@ def dashboard():
         # Get recent news for portfolio stocks and update sentiment
         news_service = NewsService()
         sentiment_service = SentimentService()
+        portfolio_impact_service = PortfolioImpactService()
         recent_news = []
         
         for stock in portfolio.stocks:
             try:
-                stock_news = news_service.get_stock_news(stock.symbol, limit=3)
+                stock_news = news_service.get_stock_news(stock.symbol, limit=5)
                 
                 # Calculate sentiment for each news article
                 sentiments = []
@@ -68,13 +70,21 @@ def dashboard():
         # Commit sentiment updates
         db.session.commit()
         
+        # Calculate portfolio impact from news sentiment
+        portfolio_impacts = portfolio_impact_service.calculate_news_impact(portfolio, recent_news)
+        portfolio_summary = portfolio_impact_service.get_portfolio_summary(portfolio, portfolio_impacts)
+        top_impact_stocks = portfolio_impact_service.get_top_impact_stocks(portfolio_impacts, limit=5)
+        
         # Sort by date
         recent_news.sort(key=lambda x: x.get('published_date', datetime.now()), reverse=True)
-        recent_news = recent_news[:10]  # Limit to 10 most recent
+        recent_news = recent_news[:15]  # Limit to 15 most recent
         
         return render_template('dashboard.html', 
                              portfolio=portfolio, 
-                             recent_news=recent_news)
+                             recent_news=recent_news,
+                             portfolio_impacts=portfolio_impacts,
+                             portfolio_summary=portfolio_summary,
+                             top_impact_stocks=top_impact_stocks)
     
     except Exception as e:
         logger.error(f"Error in dashboard: {e}")

@@ -1,9 +1,11 @@
 import requests
 from bs4 import BeautifulSoup
+import feedparser
 import logging
 from datetime import datetime
 import urllib.parse
 import time
+from dateutil import parser as date_parser
 
 logger = logging.getLogger(__name__)
 
@@ -17,14 +19,101 @@ class NewsService:
         })
     
     def get_stock_news(self, symbol, limit=10):
-        """Get news articles for a specific stock symbol"""
+        """Get news articles for a specific stock symbol using RSS feeds"""
         try:
-            # Use a more direct approach with Yahoo Finance news or financial news sites
-            # Search query for the stock
-            query = f"{symbol} stock earnings news finance"
+            # First try RSS feeds approach
+            articles = self._get_rss_news(symbol, limit)
+            
+            # If RSS doesn't return enough articles, supplement with web scraping
+            if len(articles) < limit:
+                additional_articles = self._scrape_web_news(symbol, limit - len(articles))
+                articles.extend(additional_articles)
+            
+            return articles[:limit]
+            
+        except Exception as e:
+            logger.error(f"Error fetching news for {symbol}: {e}")
+            return self._fallback_news_search(symbol, limit)
+    
+    def _get_rss_news(self, symbol, limit=10):
+        """Get news using RSS feeds from Google News"""
+        try:
+            articles = []
+            
+            # Google News RSS feed URL
+            query = f"{symbol} stock"
+            encoded_query = urllib.parse.quote(query)
+            rss_url = f"https://news.google.com/rss/search?q={encoded_query}&hl=en-US&gl=US&ceid=US:en"
+            
+            logger.info(f"Fetching RSS feed: {rss_url}")
+            
+            # Parse RSS feed
+            feed = feedparser.parse(rss_url)
+            
+            if feed.bozo:
+                logger.warning(f"RSS feed parsing had issues: {feed.bozo_exception}")
+            
+            for entry in feed.entries[:limit]:
+                try:
+                    title = entry.title if hasattr(entry, 'title') else 'No title'
+                    
+                    # Skip if title is too short or generic
+                    if len(title) < 10:
+                        continue
+                    
+                    # Extract published date
+                    published_date = datetime.now()
+                    if hasattr(entry, 'published'):
+                        try:
+                            published_date = date_parser.parse(entry.published)
+                        except:
+                            pass
+                    elif hasattr(entry, 'updated'):
+                        try:
+                            published_date = date_parser.parse(entry.updated)
+                        except:
+                            pass
+                    
+                    # Extract URL
+                    url = entry.link if hasattr(entry, 'link') else ''
+                    
+                    # Extract source from description or use default
+                    source = "Google News"
+                    if hasattr(entry, 'source') and hasattr(entry.source, 'title'):
+                        source = entry.source.title
+                    elif hasattr(entry, 'description'):
+                        # Try to extract source from description
+                        soup = BeautifulSoup(entry.description, 'html.parser')
+                        source_elem = soup.find('a')
+                        if source_elem and source_elem.get_text():
+                            source = source_elem.get_text().strip()
+                    
+                    articles.append({
+                        'title': title,
+                        'url': url,
+                        'source': source,
+                        'published_date': published_date,
+                        'symbol': symbol
+                    })
+                
+                except Exception as e:
+                    logger.error(f"Error parsing RSS entry: {e}")
+                    continue
+            
+            logger.info(f"Retrieved {len(articles)} articles from RSS for {symbol}")
+            return articles
+            
+        except Exception as e:
+            logger.error(f"Error fetching RSS news for {symbol}: {e}")
+            return []
+    
+    def _scrape_web_news(self, symbol, limit=10):
+        """Fallback web scraping method"""
+        try:
+            query = f"{symbol} stock news"
             encoded_query = urllib.parse.quote(query)
             
-            # Google News URL with finance focus
+            # Google News URL
             url = f"https://news.google.com/search?q={encoded_query}&hl=en-US&gl=US&ceid=US:en"
             
             response = self.session.get(url, timeout=15)
@@ -37,20 +126,13 @@ class NewsService:
             article_elements = soup.find_all(['article', 'div'], class_=['xrnccd', 'SoaBEf', 'Uz6usd'])
             
             if not article_elements:
-                # Fallback selectors
                 article_elements = soup.find_all('article')
-                
-            if not article_elements:
-                # Another fallback
-                article_elements = soup.find_all('div', attrs={'data-n-tid': True})
             
             for article in article_elements[:limit]:
                 try:
-                    # Extract title with multiple selectors
                     title_elem = (article.find('h3') or 
                                 article.find('h4') or 
-                                article.find('a', attrs={'data-n-tid': True}) or
-                                article.find('div', class_=['JheGif', 'ipQwMb', 'ekceJb']))
+                                article.find('a', attrs={'data-n-tid': True}))
                     
                     if not title_elem:
                         continue
@@ -71,46 +153,23 @@ class NewsService:
                         else:
                             article_url = href
                     
-                    # Extract source and time
-                    source_elem = article.find('div', class_=['vr1PYe', 'BNeawe', 'UPmit'])
-                    source = source_elem.get_text(strip=True) if source_elem else "Google News"
-                    
-                    time_elem = article.find('time')
-                    published_date = datetime.now()
-                    
-                    if time_elem:
-                        try:
-                            # Try to parse the datetime attribute
-                            datetime_attr = time_elem.get('datetime')
-                            if datetime_attr:
-                                published_date = datetime.fromisoformat(datetime_attr.replace('Z', '+00:00'))
-                        except:
-                            # Try to parse the text content for relative time
-                            time_text = time_elem.get_text(strip=True)
-                            if 'hour' in time_text or 'minute' in time_text:
-                                published_date = datetime.now()
-                    
                     articles.append({
                         'title': title,
                         'url': article_url,
-                        'source': source,
-                        'published_date': published_date,
+                        'source': "Google News",
+                        'published_date': datetime.now(),
                         'symbol': symbol
                     })
                 
                 except Exception as e:
-                    logger.error(f"Error parsing article: {e}")
+                    logger.error(f"Error parsing web article: {e}")
                     continue
-            
-            # If no articles found, try alternative approach with simple search
-            if not articles:
-                articles = self._fallback_news_search(symbol, limit)
             
             return articles
             
         except Exception as e:
-            logger.error(f"Error fetching news for {symbol}: {e}")
-            return self._fallback_news_search(symbol, limit)
+            logger.error(f"Error web scraping news for {symbol}: {e}")
+            return []
     
     def _fallback_news_search(self, symbol, limit=10):
         """Fallback method to generate sample news for testing"""

@@ -154,32 +154,92 @@
             </div>
         </div>
 
-        <!-- Portfolio Composition Chart -->
-        {% if portfolio.stocks %}
+        <!-- Portfolio Impact Analysis -->
+        {% if portfolio_summary %}
         <div class="row mb-4">
-            <div class="col-md-6">
+            <div class="col-12">
                 <div class="card">
                     <div class="card-header">
                         <h5 class="mb-0">
-                            <i class="fas fa-chart-pie me-2"></i>
-                            Portfolio Composition
+                            <i class="fas fa-chart-area me-2"></i>
+                            Portfolio Impact Analysis
                         </h5>
                     </div>
                     <div class="card-body">
-                        <canvas id="portfolioChart" height="200"></canvas>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0">
-                            <i class="fas fa-chart-bar me-2"></i>
-                            Performance Overview
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <canvas id="performanceChart" height="200"></canvas>
+                        <div class="row mb-3">
+                            <div class="col-md-3">
+                                <div class="card bg-{{ 'success' if portfolio_summary.total_sentiment_impact >= 0 else 'danger' }}">
+                                    <div class="card-body text-center">
+                                        <h6 class="card-title">Sentiment Impact</h6>
+                                        <h5>{{ "%.1f"|format(portfolio_summary.total_sentiment_impact) }}%</h5>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-{{ 'success' if portfolio_summary.estimated_total_value_impact >= 0 else 'danger' }}">
+                                    <div class="card-body text-center">
+                                        <h6 class="card-title">Estimated Value Impact</h6>
+                                        <h5>{{ '+' if portfolio_summary.estimated_total_value_impact >= 0 else '' }}${{ "%.0f"|format(portfolio_summary.estimated_total_value_impact) }}</h5>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-{{ 'danger' if portfolio_summary.overall_risk_level == 'High' else 'warning' if portfolio_summary.overall_risk_level == 'Medium' else 'success' }}">
+                                    <div class="card-body text-center">
+                                        <h6 class="card-title">Risk Level</h6>
+                                        <h5>{{ portfolio_summary.overall_risk_level }}</h5>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-info">
+                                    <div class="card-body text-center">
+                                        <h6 class="card-title">High Risk Stocks</h6>
+                                        <h5>{{ portfolio_summary.high_risk_stocks }}</h5>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {% if top_impact_stocks %}
+                        <h6>Top Impact Stocks</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Stock</th>
+                                        <th>Portfolio Weight</th>
+                                        <th>Sentiment Score</th>
+                                        <th>Portfolio Impact</th>
+                                        <th>Risk Level</th>
+                                        <th>News Count</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for stock in top_impact_stocks %}
+                                    <tr>
+                                        <td><strong>{{ stock.stock_symbol }}</strong></td>
+                                        <td>{{ "%.1f"|format(stock.portfolio_weight) }}%</td>
+                                        <td>
+                                            <span class="badge bg-{{ 'success' if stock.sentiment_score > 1 else 'danger' if stock.sentiment_score < -1 else 'secondary' }}">
+                                                {{ "%.1f"|format(stock.sentiment_score) }}
+                                            </span>
+                                        </td>
+                                        <td class="text-{{ 'success' if stock.portfolio_impact >= 0 else 'danger' }}">
+                                            {{ "%.2f"|format(stock.portfolio_impact) }}%
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{{ 'danger' if stock.risk_level == 'High' else 'warning' if stock.risk_level == 'Medium' else 'success' }}">
+                                                {{ stock.risk_level }}
+                                            </span>
+                                        </td>
+                                        <td>{{ stock.news_count }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -260,81 +320,5 @@
     {% endif %}
 </div>
 
-<!-- Chart.js Scripts -->
-{% if portfolio and portfolio.stocks %}
-<script>
-    // Portfolio Composition Chart
-    const portfolioCtx = document.getElementById('portfolioChart').getContext('2d');
-    const portfolioChart = new Chart(portfolioCtx, {
-        type: 'doughnut',
-        data: {
-            labels: [
-                {% for stock in portfolio.stocks %}
-                '{{ stock.symbol }}',
-                {% endfor %}
-            ],
-            datasets: [{
-                data: [
-                    {% for stock in portfolio.stocks %}
-                    {{ stock.get_current_value() }},
-                    {% endfor %}
-                ],
-                backgroundColor: [
-                    '#007bff', '#28a745', '#ffc107', '#dc3545', '#6f42c1',
-                    '#fd7e14', '#20c997', '#6c757d', '#f8f9fa', '#343a40'
-                ]
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'bottom'
-                }
-            }
-        }
-    });
 
-    // Performance Chart
-    const performanceCtx = document.getElementById('performanceChart').getContext('2d');
-    const performanceChart = new Chart(performanceCtx, {
-        type: 'bar',
-        data: {
-            labels: [
-                {% for stock in portfolio.stocks %}
-                '{{ stock.symbol }}',
-                {% endfor %}
-            ],
-            datasets: [{
-                label: 'Gain/Loss ($)',
-                data: [
-                    {% for stock in portfolio.stocks %}
-                    {{ stock.get_gain_loss() }},
-                    {% endfor %}
-                ],
-                backgroundColor: [
-                    {% for stock in portfolio.stocks %}
-                    '{{ "#28a745" if stock.get_gain_loss() >= 0 else "#dc3545" }}',
-                    {% endfor %}
-                ]
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true
-                }
-            }
-        }
-    });
-</script>
-{% endif %}
 {% endblock %}
