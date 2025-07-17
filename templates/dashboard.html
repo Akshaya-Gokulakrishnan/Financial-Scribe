@@ -208,10 +208,20 @@
                                                     {{ article.title }}
                                                 </a>
                                             </h6>
-                                            <div class="d-flex justify-content-between align-items-center">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
                                                 <small class="text-muted">
                                                     <i class="fas fa-chart-line me-1"></i>
                                                     {{ article.symbol }}
+                                                </small>
+                                                {% if article.sentiment is defined %}
+                                                <span class="badge bg-{{ article.sentiment_color }}">
+                                                    {{ article.sentiment_label }}
+                                                </span>
+                                                {% endif %}
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <small class="text-muted">
+                                                    {{ article.source }}
                                                 </small>
                                                 <small class="text-muted">
                                                     {{ article.published_date.strftime('%Y-%m-%d %H:%M') if article.published_date else 'Recent' }}

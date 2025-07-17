@@ -4,6 +4,7 @@ from models import Portfolio, Stock, NewsArticle
 from services.stock_service import StockService
 from services.news_service import NewsService
 from services.sentiment_service import SentimentService
+from datetime import datetime
 import logging
 
 logger = logging.getLogger(__name__)
@@ -36,18 +37,39 @@ def dashboard():
         
         db.session.commit()
         
-        # Get recent news for portfolio stocks
+        # Get recent news for portfolio stocks and update sentiment
         news_service = NewsService()
+        sentiment_service = SentimentService()
         recent_news = []
+        
         for stock in portfolio.stocks:
             try:
                 stock_news = news_service.get_stock_news(stock.symbol, limit=3)
+                
+                # Calculate sentiment for each news article
+                sentiments = []
+                for article in stock_news:
+                    sentiment = sentiment_service.analyze_sentiment(article.get('title', ''))
+                    article['sentiment'] = sentiment
+                    article['sentiment_label'] = sentiment_service.get_sentiment_label(sentiment)
+                    article['sentiment_color'] = sentiment_service.get_sentiment_color(sentiment)
+                    sentiments.append(sentiment)
+                
+                # Update stock sentiment with average
+                if sentiments:
+                    avg_sentiment = sum(sentiments) / len(sentiments)
+                    stock.news_sentiment = avg_sentiment
+                    stock.sentiment_updated = datetime.utcnow()
+                
                 recent_news.extend(stock_news)
             except Exception as e:
                 logger.error(f"Error fetching news for {stock.symbol}: {e}")
         
+        # Commit sentiment updates
+        db.session.commit()
+        
         # Sort by date
-        recent_news.sort(key=lambda x: x.get('published_date', ''), reverse=True)
+        recent_news.sort(key=lambda x: x.get('published_date', datetime.now()), reverse=True)
         recent_news = recent_news[:10]  # Limit to 10 most recent
         
         return render_template('dashboard.html', 

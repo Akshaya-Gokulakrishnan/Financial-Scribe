@@ -18,8 +18,58 @@
                         <div class="mb-3">
                             <label for="symbol" class="form-label">Stock Symbol</label>
                             <input type="text" class="form-control" id="symbol" name="symbol" 
-                                   placeholder="e.g., AAPL, MSFT, GOOGL" required>
-                            <div class="form-text">Enter the stock ticker symbol (e.g., AAPL for Apple Inc.)</div>
+                                   placeholder="e.g., AAPL, MSFT, GOOGL" required list="stockSuggestions">
+                            <datalist id="stockSuggestions">
+                                <option value="AAPL">Apple Inc.</option>
+                                <option value="MSFT">Microsoft Corporation</option>
+                                <option value="GOOGL">Alphabet Inc.</option>
+                                <option value="AMZN">Amazon.com Inc.</option>
+                                <option value="TSLA">Tesla Inc.</option>
+                                <option value="NVDA">NVIDIA Corporation</option>
+                                <option value="META">Meta Platforms Inc.</option>
+                                <option value="NFLX">Netflix Inc.</option>
+                                <option value="ADBE">Adobe Inc.</option>
+                                <option value="CRM">Salesforce Inc.</option>
+                                <option value="ORCL">Oracle Corporation</option>
+                                <option value="IBM">IBM Corporation</option>
+                                <option value="INTC">Intel Corporation</option>
+                                <option value="AMD">Advanced Micro Devices</option>
+                                <option value="CSCO">Cisco Systems Inc.</option>
+                                <option value="JPM">JPMorgan Chase & Co.</option>
+                                <option value="BAC">Bank of America Corp.</option>
+                                <option value="WFC">Wells Fargo & Company</option>
+                                <option value="GS">Goldman Sachs Group Inc.</option>
+                                <option value="MS">Morgan Stanley</option>
+                                <option value="V">Visa Inc.</option>
+                                <option value="MA">Mastercard Inc.</option>
+                                <option value="PYPL">PayPal Holdings Inc.</option>
+                                <option value="DIS">Walt Disney Company</option>
+                                <option value="CMCSA">Comcast Corporation</option>
+                                <option value="T">AT&T Inc.</option>
+                                <option value="VZ">Verizon Communications</option>
+                                <option value="KO">Coca-Cola Company</option>
+                                <option value="PEP">PepsiCo Inc.</option>
+                                <option value="MCD">McDonald's Corporation</option>
+                                <option value="NKE">Nike Inc.</option>
+                                <option value="WMT">Walmart Inc.</option>
+                                <option value="HD">Home Depot Inc.</option>
+                                <option value="LOW">Lowe's Companies Inc.</option>
+                                <option value="TGT">Target Corporation</option>
+                                <option value="CVS">CVS Health Corporation</option>
+                                <option value="UNH">UnitedHealth Group Inc.</option>
+                                <option value="JNJ">Johnson & Johnson</option>
+                                <option value="PFE">Pfizer Inc.</option>
+                                <option value="MRNA">Moderna Inc.</option>
+                                <option value="XOM">Exxon Mobil Corporation</option>
+                                <option value="CVX">Chevron Corporation</option>
+                                <option value="SPY">SPDR S&P 500 ETF</option>
+                                <option value="QQQ">Invesco QQQ Trust</option>
+                                <option value="IWM">iShares Russell 2000 ETF</option>
+                                <option value="VTI">Vanguard Total Stock Market ETF</option>
+                                <option value="BTC-USD">Bitcoin USD</option>
+                                <option value="ETH-USD">Ethereum USD</option>
+                            </datalist>
+                            <div class="form-text">Enter the stock ticker symbol or select from dropdown</div>
                         </div>
                         
                         <div class="mb-3">
@@ -34,9 +84,10 @@
                             <div class="input-group">
                                 <span class="input-group-text">$</span>
                                 <input type="number" class="form-control" id="purchase_price" name="purchase_price" 
-                                       step="0.01" min="0.01" placeholder="0.00" required>
+                                       step="0.01" min="0.01" placeholder="0.00" required readonly>
+                                <button class="btn btn-outline-secondary" type="button" id="editPriceBtn">Edit</button>
                             </div>
-                            <div class="form-text">Price per share when you purchased</div>
+                            <div class="form-text">Auto-filled with current market price. Click Edit to modify.</div>
                         </div>
                         
                         <div class="d-flex gap-2">
@@ -97,6 +148,33 @@
         }
     });
     
+    document.getElementById('symbol').addEventListener('input', function() {
+        const symbol = this.value.toUpperCase().trim();
+        this.value = symbol;
+        if (symbol.length > 2) {
+            fetchStockInfo(symbol);
+        }
+    });
+    
+    // Edit price button functionality
+    document.getElementById('editPriceBtn').addEventListener('click', function() {
+        const purchasePriceInput = document.getElementById('purchase_price');
+        const editBtn = document.getElementById('editPriceBtn');
+        
+        if (purchasePriceInput.readOnly) {
+            purchasePriceInput.readOnly = false;
+            purchasePriceInput.focus();
+            editBtn.textContent = 'Lock';
+            editBtn.classList.remove('btn-outline-secondary');
+            editBtn.classList.add('btn-outline-warning');
+        } else {
+            purchasePriceInput.readOnly = true;
+            editBtn.textContent = 'Edit';
+            editBtn.classList.remove('btn-outline-warning');
+            editBtn.classList.add('btn-outline-secondary');
+        }
+    });
+    
     function fetchStockInfo(symbol) {
         const stockInfo = document.getElementById('stockInfo');
         const stockInfoBody = document.getElementById('stockInfoBody');
@@ -110,6 +188,9 @@
             .then(data => {
                 if (data.error) {
                     stockInfoBody.innerHTML = `<div class="alert alert-danger mb-0">Error: ${data.error}</div>`;
+                    // Clear the purchase price if stock not found
+                    const purchasePriceInput = document.getElementById('purchase_price');
+                    purchasePriceInput.value = '';
                 } else {
                     stockInfoBody.innerHTML = `
                         <div class="row">
@@ -133,15 +214,16 @@
                         </div>
                     `;
                     
-                    // Auto-fill current price as purchase price if empty
+                    // Auto-fill current price as purchase price
                     const purchasePriceInput = document.getElementById('purchase_price');
-                    if (!purchasePriceInput.value) {
-                        purchasePriceInput.value = data.current_price.toFixed(2);
-                    }
+                    purchasePriceInput.value = data.current_price.toFixed(2);
                 }
             })
             .catch(error => {
                 stockInfoBody.innerHTML = `<div class="alert alert-danger mb-0">Error fetching stock information: ${error.message}</div>`;
+                // Clear the purchase price if there's an error
+                const purchasePriceInput = document.getElementById('purchase_price');
+                purchasePriceInput.value = '';
             });
     }
 </script>
