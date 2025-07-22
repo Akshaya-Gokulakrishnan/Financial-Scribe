@@ -43,11 +43,11 @@ def dashboard():
         sentiment_service = SentimentService()
         portfolio_impact_service = PortfolioImpactService()
         recent_news = []
+        stock_news_map = {}  # NEW: Map symbol to news list
         
         for stock in portfolio.stocks:
             try:
                 stock_news = news_service.get_stock_news(stock.symbol, limit=5)
-                
                 # Calculate sentiment for each news article
                 sentiments = []
                 for article in stock_news:
@@ -56,14 +56,13 @@ def dashboard():
                     article['sentiment_label'] = sentiment_service.get_sentiment_label(sentiment)
                     article['sentiment_color'] = sentiment_service.get_sentiment_color(sentiment)
                     sentiments.append(sentiment)
-                
                 # Update stock sentiment with average
                 if sentiments:
                     avg_sentiment = sum(sentiments) / len(sentiments)
                     stock.news_sentiment = avg_sentiment
                     stock.sentiment_updated = datetime.utcnow()
-                
                 recent_news.extend(stock_news)
+                stock_news_map[stock.symbol] = stock_news  # NEW: Add to map
             except Exception as e:
                 logger.error(f"Error fetching news for {stock.symbol}: {e}")
         
@@ -84,7 +83,8 @@ def dashboard():
                              recent_news=recent_news,
                              portfolio_impacts=portfolio_impacts,
                              portfolio_summary=portfolio_summary,
-                             top_impact_stocks=top_impact_stocks)
+                             top_impact_stocks=top_impact_stocks,
+                             stock_news_map=stock_news_map)  # NEW: Pass map
     
     except Exception as e:
         logger.error(f"Error in dashboard: {e}")
