@@ -1,0 +1,15 @@
+beautifulsoup4
+email-validator
+feedparser
+flask
+flask-sqlalchemy
+gunicorn
+lxml
+psycopg2-binary
+python-dateutil
+requests
+sqlalchemy
+textblob
+trafilatura
+werkzeug
+yfinance

@@ -20,8 +20,8 @@ class Portfolio(db.Model):
         return sum(stock.get_cost_basis() for stock in self.stocks)
     
     def get_total_gain_loss(self):
-        """Calculate total gain/loss"""
-        return self.get_total_value() - self.get_total_cost()
+        """Calculate total gain/loss using new logic: sum((quantity × current_price) - current_price for each stock)"""
+        return sum((stock.quantity * stock.current_price) - stock.current_price for stock in self.stocks)
     
     def get_daily_gain_loss(self):
         """Calculate daily gain/loss"""
@@ -57,15 +57,14 @@ class Stock(db.Model):
         return self.quantity * self.purchase_price
     
     def get_gain_loss(self):
-        """Get total gain/loss"""
-        return self.get_current_value() - self.get_cost_basis()
+        """Get total gain/loss using new logic: (quantity × current_price) - current_price"""
+        return (self.quantity * self.current_price) - self.current_price
     
     def get_gain_loss_percentage(self):
-        """Get gain/loss percentage"""
-        cost_basis = self.get_cost_basis()
-        if cost_basis == 0:
+        """Get gain/loss percentage using new logic"""
+        if self.current_price == 0:
             return 0
-        return (self.get_gain_loss() / cost_basis) * 100
+        return (self.get_gain_loss() / self.current_price) * 100
     
     def get_daily_gain_loss(self):
         """Get daily gain/loss"""
